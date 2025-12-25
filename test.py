@@ -1,17 +1,14 @@
 import streamlit as st
 import google.generativeai as genai
 import os
-from laws import coast_guard_law
-# --- ✅ 改用 try-except 結構 (最穩定的寫法) ---
+from laws import coast_guard_law 
+
+# --- 設定 API Key (修正版) ---
 try:
-    # 嘗試從雲端抓取鑰匙
-    # 如果你在本機沒設定 secrets 檔案，這一行會報錯，直接跳去 except
     api_key = st.secrets["GOOGLE_API_KEY"]
 except:
-    # 只要上面出錯 (代表你在本機)，就用這把鑰匙
     api_key = "上傳前記得把真鑰匙刪掉" 
 
-# 設定給 Gemini
 genai.configure(api_key=api_key)
 
 # 這裡就是我們指揮 Gemini 的地方
