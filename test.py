@@ -34,7 +34,7 @@ genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-flash-latest')
 # --- 設定網頁標題 ---
 st.title("🌊 海巡特考 AI 陪讀教練")
-st.subheader("利用 Gemini 3 Pro 幫你暴力突破申論題")
+st.subheader("幫你突破申論題痛點")
 
 # --- 側邊欄：選擇科目 ---
 subject = st.sidebar.selectbox(
@@ -88,4 +88,5 @@ if 'question' in st.session_state:
                 st.markdown("### 批改結果")
                 st.write(feedback.text)
         else:
+
             st.warning("請先輸入答案再提交！")
