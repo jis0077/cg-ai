@@ -52,7 +52,7 @@ genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-flash-latest')
 # --- 設定網頁標題 ---
 st.title("🌊 海巡特考 AI 陪讀教練")
-st.subheader("幫你突破申論題痛點")
+st.subheader("幫你抓到申論題痛點")
 
 # --- 側邊欄：選擇科目 ---
 subject = st.sidebar.selectbox(
