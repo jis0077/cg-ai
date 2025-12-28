@@ -17,18 +17,25 @@ except:
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-flash-latest')
 
-# --- 設定 Google Sheets 連線 (新功能) ---
+# --- 設定 Google Sheets 連線 (改良防呆版) ---
 def save_to_google_sheet(data_row):
     try:
-        # 1. 從 Secrets 讀取機器人鑰匙
-        key_dict = json.loads(st.secrets["GOOGLE_SHEETS_KEY"])
+        # 讀取 Secrets
+        secret_data = st.secrets["GOOGLE_SHEETS_KEY"]
+        
+        # 防呆機制 1：如果 Streamlit 已經自動把它轉成 dict，就不用 json.loads
+        if isinstance(secret_data, dict):
+            key_dict = secret_data
+        else:
+            # 防呆機制 2：如果是字串，加上 strict=False 來忽略某些控制字元錯誤
+            key_dict = json.loads(secret_data, strict=False)
         
         # 2. 連線設定
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
         client = gspread.authorize(creds)
         
-        # 3. 打開試算表 (請確認名字跟你的 Google Sheet 一模一樣)
+        # 3. 打開試算表
         sheet = client.open("海巡特考練習紀錄").sheet1
         
         # 4. 如果是新表，自動寫入標題列
@@ -38,6 +45,9 @@ def save_to_google_sheet(data_row):
         # 5. 寫入資料
         sheet.append_row(data_row)
         return True
+    except json.JSONDecodeError as e:
+        st.error(f"鑰匙格式錯誤 (JSON Error)：請檢查 Secrets 的格式。詳細錯誤：{e}")
+        return False
     except Exception as e:
         st.error(f"雲端存檔失敗：{e}")
         return False
