@@ -15,7 +15,7 @@ except:
     st.stop()
 
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-flash-latest')
 
 # --- 設定 Google Sheets 連線 (新功能) ---
 def save_to_google_sheet(data_row):
