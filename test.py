@@ -1,5 +1,5 @@
 import streamlit as st
-import openai # DeepSeek 使用 OpenAI 的套件格式
+from groq import Groq # 換成 Groq 套件
 import os
 import time
 import json
@@ -8,15 +8,11 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from laws import law_database
 
-# --- 1. 設定 DeepSeek API ---
+# --- 1. 設定 Groq API ---
 try:
-    # DeepSeek 官方 API 網址
-    client = openai.OpenAI(
-        api_key = st.secrets["DEEPSEEK_API_KEY"], 
-        base_url = "https://api.deepseek.com"
-    )
+    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 except:
-    st.error("找不到 DEEPSEEK_API_KEY，請檢查 Secrets 設定！")
+    st.error("找不到 GROQ_API_KEY，請檢查 Secrets 設定！")
     st.stop()
 
 # --- 2. 設定 Google Sheets 連線 ---
@@ -67,29 +63,28 @@ def save_to_notion(subject, question, answer, feedback):
 
 # --- 4. 網頁介面 ---
 st.title("🌊 海巡特考 AI 陪讀教練")
-st.subheader("DeepSeek 強力驅動版 (Sheets + Notion)")
+st.subheader("Groq 極速引擎版 (Sheets + Notion)")
 
 with st.sidebar:
     st.header("功能選單")
     subject = st.selectbox("選擇科目", ("海巡法規", "刑法", "刑事訴訟法", "行政法"))
-    st.info("💡 已切換至 DeepSeek API，不再受 Google 20次限制")
+    st.info("🚀 Groq 強力驅動：模型選用 Llama-3.3-70b")
 
 # AI 出題邏輯
-if st.button("🔥 請 DeepSeek 出一題申論題"):
+if st.button("🔥 請 Groq 出一題申論題"):
     selected_law = law_database.get(subject, "查無資料")
-    prompt = f"你是一位嚴格的海巡特考老師。參考法規：{selected_law}\n任務：針對「{subject}」設計一道情境式申論題。只要題目，不要答案。"
+    prompt = f"你是一位嚴格的海巡特考老師。參考法規資料：{selected_law}\n任務：針對「{subject}」設計一道情境式申論題。只要題目，不要答案。"
     
-    with st.spinner('DeepSeek 思考中...'):
-        # 呼叫 DeepSeek 模型
-        response = client.chat.completions.create(
-            model="deepseek-chat",
+    with st.spinner('Groq 正在光速思考...'):
+        # 呼叫 Groq 模型 (Llama 3.3 是目前最強推薦)
+        chat_completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            stream=False
+            model="llama-3.3-70b-versatile",
         )
-        st.session_state['question'] = response.choices[0].message.content
+        st.session_state['question'] = chat_completion.choices[0].message.content
         st.session_state['current_feedback'] = None 
 
-# 作答與存檔
+# 作答與存檔區
 if 'question' in st.session_state:
     st.info(st.session_state['question'])
     with st.form(key='answer_form'):
@@ -98,19 +93,18 @@ if 'question' in st.session_state:
 
     if submit_btn and user_answer:
         selected_law = law_database.get(subject, "查無資料")
-        verify_prompt = f"題目：{st.session_state['question']}\n考生回答：{user_answer}\n參考法條：{selected_law}\n任務：閱卷評分並給予改進建議。"
+        verify_prompt = f"題目：{st.session_state['question']}\n考生回答：{user_answer}\n參考法條：{selected_law}\n任務：閱卷評分並給予精確的申論建議。"
         
-        with st.spinner('DeepSeek 閱卷與存檔中...'):
+        with st.spinner('Groq 正在閱卷並存檔...'):
             # 1. AI 批改
             response = client.chat.completions.create(
-                model="deepseek-chat",
                 messages=[{"role": "user", "content": verify_prompt}],
-                stream=False
+                model="llama-3.3-70b-versatile",
             )
             feedback_text = response.choices[0].message.content
             st.session_state['current_feedback'] = feedback_text
             
-            # 2. 存檔
+            # 2. 存檔到試算表與 Notion
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
             google_ok = save_to_google_sheet([timestamp, subject, st.session_state['question'], user_answer, feedback_text])
             notion_ok = save_to_notion(subject, st.session_state['question'], user_answer, feedback_text)
